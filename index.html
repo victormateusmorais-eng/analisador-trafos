@@ -196,11 +196,13 @@ input:disabled{opacity:.6;cursor:not-allowed}
 try{
   const Z=window.ChartZoom;if(Z&&window.Chart)Chart.register(Z.default||Z);
   const fine=matchMedia('(pointer:fine)').matches;
-  Chart.defaults.plugins.zoom={
-    limits:{x:{min:'original',max:'original'},y:{min:'original',max:'original'}},
-    pan:{enabled:true,mode:'x',modifierKey:fine?'shift':null},
-    zoom:{wheel:{enabled:true,modifierKey:'ctrl'},pinch:{enabled:true},drag:{enabled:fine,backgroundColor:'rgba(46,117,182,.15)',borderColor:'rgba(46,117,182,.6)',borderWidth:1},mode:'x'}
-  };
+  const D=Chart.defaults.plugins.zoom=Chart.defaults.plugins.zoom||{};
+  D.limits={x:{min:'original',max:'original'}};
+  D.pan=Object.assign(D.pan||{},{enabled:true,mode:'x',threshold:5,modifierKey:fine?'shift':null});
+  D.zoom=D.zoom||{};D.zoom.mode='x';
+  D.zoom.wheel=Object.assign(D.zoom.wheel||{},{enabled:true,speed:0.15,modifierKey:'ctrl'});
+  D.zoom.pinch=Object.assign(D.zoom.pinch||{},{enabled:true});
+  D.zoom.drag=Object.assign(D.zoom.drag||{},{enabled:fine,threshold:5,backgroundColor:'rgba(46,117,182,.15)',borderColor:'rgba(46,117,182,.6)',borderWidth:1});
 }catch(e){}
 })();</script>
 <script>(()=>{
