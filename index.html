@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -6,9 +7,9 @@
 <title>Analisador de Trafo e Fases</title>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---bg:#f5f7fa;--card:#fff;--txt:#1b2430;--mut:#667085;--bd:#dde3ea;--pri:#1f4e79;--red:#c00000;--ok:#1b7f4b}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--card:#18202a;--txt:#e6ebf1;--mut:#97a3b2;--bd:#2a3542;--pri:#6aa9e0;--red:#ff6b6b;--ok:#5fd093}}
-:root[data-theme="dark"]{--bg:#0f141b;--card:#18202a;--txt:#e6ebf1;--mut:#97a3b2;--bd:#2a3542;--pri:#6aa9e0;--red:#ff6b6b;--ok:#5fd093}
+--bg:#f5f7fa;--card:#fff;--txt:#1b2430;--mut:#667085;--bd:#dde3ea;--pri:#1f4e79;--red:#c00000;--ok:#1b7f4b;--ovl:#7b1fa2}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--card:#18202a;--txt:#e6ebf1;--mut:#97a3b2;--bd:#2a3542;--pri:#6aa9e0;--red:#ff6b6b;--ok:#5fd093;--ovl:#d08bf0}}
+:root[data-theme="dark"]{--bg:#0f141b;--card:#18202a;--txt:#e6ebf1;--mut:#97a3b2;--bd:#2a3542;--pri:#6aa9e0;--red:#ff6b6b;--ok:#5fd093;--ovl:#d08bf0}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.45}
@@ -38,25 +39,35 @@ button.pdf:hover{filter:brightness(1.1)} button.alt{background:transparent;color
 .legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin:0 5px 0 12px}.legend i:first-child{margin-left:0}
 .note{font-size:.82rem;color:var(--mut);margin:8px 0 0}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
-@media print{.drop,.opts,.acts,.msg,.sub,.tabs{display:none!important}body{background:#fff;color:#000}.card{break-inside:avoid;border-color:#ccc}.chartbox{height:300px}:root{--bg:#fff;--card:#fff;--txt:#1b2430;--mut:#667085;--bd:#dde3ea;--pri:#1f4e79;--red:#c00000;--ok:#1b7f4b}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media print{.drop,.opts,.acts,.msg,.sub,.tabs{display:none!important}body{background:#fff;color:#000}.card{break-inside:avoid;border-color:#ccc}.chartbox{height:300px}:root{--bg:#fff;--card:#fff;--txt:#1b2430;--mut:#667085;--bd:#dde3ea;--pri:#1f4e79;--red:#c00000;--ok:#1b7f4b;--ovl:#7b1fa2}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
 .tab{font:inherit;font-weight:600;color:var(--pri);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 16px;cursor:pointer}
 .tab.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+input:disabled{opacity:.6;cursor:not-allowed}
+.warn{color:#d97706}
+.ovl{color:var(--ovl)}
 </style>
 </head>
 <body>
 <main>
 <h1>⚡ Analisador de Trafo e Fases</h1>
-<div class="tabs"><button class="tab on" data-t="tab_t">⚡ Carregamento do trafo</button><button class="tab" data-t="tab_b">⚖️ Balanceamento de fases</button></div>
+<div class="card" id="u_card">
+  <div class="drop" id="u_drop"><div><b>Clique para escolher</b> ou arraste aqui as planilhas (até 3 de uma vez: carregamento, corrente e tensão)</div><div class="fname" id="u_list"></div></div>
+  <input id="u_file" type="file" multiple accept=".xlsx,.xls,.xlsm,.csv,.txt" class="hide">
+  <div class="msg" id="u_msg"></div>
+  <p class="note">O tipo de cada arquivo é reconhecido pelas colunas: Data/Hora com W ou kVA (carregamento), I_a/I_b/I_c (balanceamento) ou V_a/V_b/V_c (tensão).</p>
+</div>
+<div class="tabs"><button class="tab on" data-t="tab_t">⚡ Carregamento do trafo</button><button class="tab" data-t="tab_b">⚖️ Balanceamento de fases</button><button class="tab" data-t="tab_v">🔌 Tensão (PRODIST Módulo 8)</button></div>
 <section id="tab_t">
 <p class="sub">Carregue a planilha de memória de massa do medidor e veja o gráfico de linhas com os trechos em que a potência do trafo é ultrapassada.</p>
 
 <div class="card">
-  <div id="t_drop" class="drop"><div><b>Clique para escolher</b> ou arraste a planilha aqui (.xlsx, .xls, .csv)</div><div id="t_fname" class="fname"></div></div>
+  <div id="t_drop" class="drop hide"><div><b>Clique para escolher</b> ou arraste a planilha aqui (.xlsx, .xls, .csv)</div><div id="t_fname" class="fname"></div></div>
   <input id="t_file" type="file" accept=".xlsx,.xls,.xlsm,.csv" class="hide">
   <div class="opts">
     <label>Potência do trafo (kVA)<input id="t_kva" type="number" step="0.5" value="112.5"></label>
+    <label>Limite de sobrecarga (%)<input id="t_ovl" type="number" step="1" min="100" value="120"></label>
     <label>Intervalo dos pontos
       <select id="t_step"><option value="5">Todos (5 min)</option><option value="10" selected>A cada 10 min</option><option value="15">A cada 15 min</option><option value="30">A cada 30 min</option><option value="60">A cada 60 min</option></select></label>
     <label>Exibir em
@@ -70,16 +81,17 @@ button.pdf:hover{filter:brightness(1.1)} button.alt{background:transparent;color
   <div class="card"><div class="stats" id="t_stats"></div></div>
   <div class="card">
     <div class="chartbox"><canvas id="t_cv"></canvas></div>
-    <div class="legend"><i style="background:var(--pri)"></i>Dentro do limite<i style="background:var(--red)"></i>Acima da potência do trafo<i style="background:var(--red);opacity:.6"></i>Limite (tracejado)</div>
+    <div class="legend"><i style="background:var(--pri)"></i>Dentro do limite<i style="background:var(--red)"></i>Acima da potência do trafo<i style="background:var(--ovl)"></i>Acima do limite de sobrecarga<i style="background:var(--red);opacity:.6"></i>Linha de 100% (tracejada)<i style="background:var(--ovl);opacity:.7"></i>Linha de sobrecarga (tracejada)</div>
   </div>
   <div class="card"><h2>Períodos acima do limite</h2><div class="scroll"><table><thead><tr><th>Início</th><th>Fim</th><th>Duração</th><th>Pico (kVA)</th><th>Pico (%)</th></tr></thead><tbody id="t_ev"></tbody></table></div></div>
+  <div class="card"><h2 id="t_ovh">Períodos acima de 120% (sobrecarga)</h2><div class="scroll"><table><thead><tr><th>Início</th><th>Fim</th><th>Duração</th><th>Pontos</th><th>Pico (kVA)</th><th>Pico (%)</th></tr></thead><tbody id="t_ov"></tbody></table></div><p class="note">O tempo de cada período é o número de pontos acima do limite vezes o intervalo dos pontos escolhido acima.</p></div>
 </div>
 </section>
 <section id="tab_b" class="hide">
 <p class="sub">Carregue a memória de massa de corrente do medidor (colunas I_a, I_b e I_c) e veja como a carga está distribuída entre as fases, o desequilíbrio ao longo do tempo e os períodos fora do limite.</p>
 
 <div class="card">
-  <div id="drop" class="drop"><div><b>Clique para escolher</b> ou arraste a planilha aqui (.csv, .xlsx, .xls)</div><div id="fname" class="fname"></div></div>
+  <div id="drop" class="drop hide"><div><b>Clique para escolher</b> ou arraste a planilha aqui (.csv, .xlsx, .xls)</div><div id="fname" class="fname"></div></div>
   <input id="file" type="file" accept=".xlsx,.xls,.xlsm,.csv,.txt" class="hide">
   <div class="opts">
     <label>Limite de desequilíbrio (%)<input id="lim" type="number" step="1" min="1" value="15"></label>
@@ -105,6 +117,43 @@ button.pdf:hover{filter:brightness(1.1)} button.alt{background:transparent;color
   <div class="card"><h2>Perfil médio por hora do dia (A): fases e neutro estimado</h2><div class="chartbox"><canvas id="c3"></canvas></div><div class="legend" id="lg3"></div><p class="note" id="nn"></p></div>
   <div class="card"><h2>Períodos com desequilíbrio acima do limite</h2><div class="scroll"><table><thead><tr><th>Início</th><th>Fim</th><th>Duração</th><th>Desq. máx.</th><th>Desq. médio</th><th>Fase mais carregada</th><th>Neutro máx. (A)</th></tr></thead><tbody id="ev"></tbody></table></div><p class="note" id="evn"></p></div>
   <p class="note">Desequilíbrio = maior desvio de uma fase em relação à média das três ÷ média. Neutro estimado assumindo defasagem de 120° e mesmo fator de potência nas fases (In = √(Ia²+Ib²+Ic²−IaIb−IbIc−IcIa)); é uma estimativa, não uma medição.</p>
+</div>
+</section>
+<section id="tab_v" class="hide">
+<p class="sub">Carregue a memória de massa de tensão do medidor (colunas V_a, V_b e V_c) e avalie a tensão em regime permanente conforme o PRODIST Módulo 8: faixas adequada, precária e crítica, e os indicadores DRP e DRC por conjunto de 1008 leituras de 10 minutos.</p>
+<div class="card">
+  <div class="drop hide" id="v_drop"><div><b>Clique para escolher</b> ou arraste a planilha aqui (.csv, .xlsx, .xls)</div><div class="fname" id="v_fname"></div></div>
+  <input id="v_file" type="file" accept=".xlsx,.xls,.xlsm,.csv,.txt" class="hide">
+  <div class="opts">
+    <label>Tensão de referência (fase-neutro)
+      <select id="v_sys"><option value="220" selected>380/220 V (TR = 220 V)</option><option value="127">220/127 V (TR = 127 V)</option><option value="custom">Personalizado</option></select></label>
+    <label>Crítica abaixo de (V)<input id="v_pmin" type="number" step="0.1" value="191" disabled></label>
+    <label>Adequada de (V)<input id="v_amin" type="number" step="0.1" value="202" disabled></label>
+    <label>Adequada até (V)<input id="v_amax" type="number" step="0.1" value="231" disabled></label>
+    <label>Crítica acima de (V)<input id="v_pmax" type="number" step="0.1" value="233" disabled></label>
+    <label>Expurgar intervalo se tensão ≤ (V)<input id="v_thr" type="number" step="0.1" min="0" value="22"></label>
+    <label>De<input id="v_d0" type="date"></label>
+    <label>Até<input id="v_d1" type="date"></label>
+    <label>Agrupar pontos do gráfico
+      <select id="v_grp"><option value="10">10 min (todos)</option><option value="30">30 min</option><option value="60" selected>1 hora</option><option value="360">6 horas</option><option value="1440">1 dia</option></select></label>
+    <label>Valor de cada grupo<select id="v_mode"><option value="mean" selected>Média</option><option value="min">Mínimo</option><option value="max">Máximo</option></select></label>
+    <label>Duração mínima do evento<select id="v_mind"><option value="0" selected>Qualquer</option><option value="30">30 min</option><option value="60">1 hora</option><option value="180">3 horas</option></select></label>
+  </div>
+  <div class="msg" id="v_msg"></div>
+</div>
+
+<div id="v_res" class="hide">
+  <div class="acts"><button id="v_pdf" class="pdf">📄 Gerar relatório em PDF (colorido)</button><button id="v_prt" class="pdf alt">🖨️ Imprimir / salvar como PDF</button></div>
+  <div class="card"><div class="stats" id="v_stats"></div><p class="note" id="v_bands"></p></div>
+  <div class="card"><h2>Tensão por fase (V)</h2><div class="chartbox"><canvas id="v_c1"></canvas></div><div class="legend" id="v_lg1"></div><p class="note">Intervalos expurgados (interrupções) ficam em branco no gráfico.</p></div>
+  <div class="card"><h2>DRP e DRC por conjunto de 1008 leituras de 10 min</h2><div class="chartbox"><canvas id="v_c2"></canvas></div><div class="legend" id="v_lg2"></div><p class="note" id="v_n2"></p></div>
+  <div class="card"><h2>Resumo por fase (todo o período)</h2><div class="scroll"><table><thead><tr><th>Fase</th><th>Média (V)</th><th>Mín. (V)</th><th>Máx. (V)</th><th>Leituras precárias</th><th>Leituras críticas</th><th>DRP (%)</th><th>DRC (%)</th></tr></thead><tbody id="v_ph"></tbody></table></div><p class="note">Aqui o DRP e o DRC usam todos os intervalos válidos do período. O indicador da norma é o dos conjuntos de 1008 leituras, nas tabelas a seguir.</p></div>
+  <div class="card"><h2>Apuração mensal</h2><div class="scroll"><table><thead><tr><th>Mês</th><th>Conjuntos completos</th><th>DRP médio (%)</th><th>DRC médio (%)</th><th>Situação</th></tr></thead><tbody id="v_mo"></tbody></table></div><p class="note">Valor do mês = média dos conjuntos de 1008 leituras que terminam no mês. Limites: DRP ≤ 3% e DRC ≤ 0,5%.</p></div>
+  <div class="card"><h2>Conjuntos de 1008 leituras (cerca de 7 dias)</h2><div class="scroll"><table><thead><tr><th>#</th><th>Início</th><th>Fim</th><th>Leituras válidas</th><th>DRP (%)</th><th>DRC (%)</th><th>Situação</th></tr></thead><tbody id="v_set"></tbody></table></div></div>
+  <div class="card"><h2>Perfil médio por hora do dia (V)</h2><div class="chartbox"><canvas id="v_c3"></canvas></div><div class="legend" id="v_lg3"></div></div>
+  <div class="card"><h2>Períodos fora da faixa adequada</h2><div class="scroll"><table><thead><tr><th>Início</th><th>Fim</th><th>Duração</th><th>Classe</th><th>Fases</th><th>Tensão mín. (V)</th><th>Tensão máx. (V)</th></tr></thead><tbody id="v_ev"></tbody></table></div><p class="note" id="v_evn"></p></div>
+  <div class="card"><h2>Intervalos expurgados (interrupções)</h2><div class="scroll"><table><thead><tr><th>Início</th><th>Fim</th><th>Duração</th><th>Fases com tensão ≤ limite</th></tr></thead><tbody id="v_ex"></tbody></table></div><p class="note">Intervalos de 10 min com tensão menor ou igual ao limite de expurgo em alguma fase não entram no DRP nem no DRC. Um limite de expurgo mais alto (por exemplo, 70% da tensão de referência) também retira afundamentos profundos; confira o critério que sua empresa adota.</p></div>
+  <p class="note">Método: cada leitura de 10 min é classificada em adequada, precária ou crítica. O DRP (DRC) de um conjunto é o maior número de leituras precárias (críticas) entre as fases, dividido por 1008 e multiplicado por 100. Limitações: a memória de massa traz médias de 5 min, então cada leitura de 10 min é a média de duas, com o horário marcando o fim do período; variações de tensão de curta duração (VTCD) não podem ser identificadas, e só as interrupções são expurgadas. O resultado é um pré-diagnóstico e não substitui a medição de conformidade com instrumento de qualidade de energia. Confira as faixas e a versão vigente do Módulo 8 antes de usar em relatório oficial.</p>
 </div>
 </section>
 </main>
@@ -161,18 +210,23 @@ function render(){
   if(!rows.length)return;
   const lim=parseFloat($('t_kva').value),step=+$('t_step').value,pct=$('t_unit').value==='pct';
   if(!(lim>0))return fail('Informe a potência do trafo em kVA.');
+  const op=parseFloat($('t_ovl').value);
+  if(!(op>=100))return fail('Informe o limite de sobrecarga em %, a partir de 100.');
+  const olim=lim*op/100,OL=pct?op:olim;
   $('t_msg').textContent='';
   const pts=rows.filter(r=>r.d.getUTCMinutes()%step===0);
   if(!pts.length)return fail('Nenhum ponto cai nesse intervalo.');
   const val=pts.map(r=>pct?r.s/lim*100:r.s),L=pct?100:lim,u=pct?'%':' kVA';
-  const over=pts.map(r=>r.s>lim);
+  const over=pts.map(r=>r.s>lim),oov=pts.map(r=>r.s>olim);
   const labels=pts.map(r=>fmt(r.d));
   const mx=Math.max(...pts.map(r=>r.s)),im=pts.findIndex(r=>r.s===mx);
-  const n=over.filter(Boolean).length,avg=pts.reduce((t,r)=>t+r.s,0)/pts.length;
+  const n=over.filter(Boolean).length,no=oov.filter(Boolean).length,avg=pts.reduce((t,r)=>t+r.s,0)/pts.length;
   const st=[['Pico',(pct?(mx/lim*100).toFixed(1)+'%':mx.toFixed(1)+' kVA'),mx>lim?'bad':'good'],
     ['Quando ocorreu',fmt(pts[im].d),''],
     ['Pontos acima do limite',n+' de '+pts.length+' ('+(n/pts.length*100).toFixed(1)+'%)',n?'bad':'good'],
     ['Tempo acima do limite',dur(n*step),n?'bad':'good'],
+    ['Pontos acima de '+op+'%',no+' de '+pts.length+' ('+(no/pts.length*100).toFixed(1)+'%)',no?'ovl':'good'],
+    ['Tempo acima de '+op+'%',dur(no*step),no?'ovl':'good'],
     ['Média',pct?(avg/lim*100).toFixed(1)+'%':avg.toFixed(1)+' kVA',''],
     ['Período',fmt(pts[0].d)+' → '+fmt(pts[pts.length-1].d),'']];
   $('t_stats').innerHTML=st.map(([k,v,c])=>`<div class="st"><small>${k}</small><strong class="${c}">${v}</strong></div>`).join('');
@@ -180,57 +234,63 @@ function render(){
   const ev=[];let cur=null;
   pts.forEach((r,i)=>{if(over[i]){if(!cur)cur={i0:i,i1:i,pk:r.s};cur.i1=i;cur.pk=Math.max(cur.pk,r.s)}else if(cur){ev.push(cur);cur=null}});
   if(cur)ev.push(cur);
+  const eo=[];cur=null;
+  pts.forEach((r,i)=>{if(oov[i]){if(!cur)cur={i0:i,i1:i,pk:r.s,k:0};cur.i1=i;cur.k++;cur.pk=Math.max(cur.pk,r.s)}else if(cur){eo.push(cur);cur=null}});
+  if(cur)eo.push(cur);
+  $('t_ovh').textContent='Períodos acima de '+op+'% (sobrecarga)';
+  $('t_ov').innerHTML=eo.length?eo.map(e=>`<tr><td>${fmt(pts[e.i0].d)}</td><td>${fmt(pts[e.i1].d)}</td><td>${dur(e.k*step)}</td><td>${e.k}</td><td>${e.pk.toFixed(1)}</td><td class="ovl"><b>${(e.pk/lim*100).toFixed(1)}%</b></td></tr>`).join('')+`<tr><td colspan="2"><b>Total</b></td><td><b>${dur(no*step)}</b></td><td><b>${no}</b></td><td colspan="2"></td></tr>`:`<tr><td colspan="6" class="good">Nenhum ponto acima de ${op}% no período analisado.</td></tr>`;
   $('t_ev').innerHTML=ev.length?ev.map(e=>`<tr><td>${fmt(pts[e.i0].d)}</td><td>${fmt(pts[e.i1].d)}</td><td>${dur((e.i1-e.i0+1)*step)}</td><td>${e.pk.toFixed(1)}</td><td class="bad">${(e.pk/lim*100).toFixed(1)}%</td></tr>`).join(''):'<tr><td colspan="5" class="good">Nenhum período acima do limite 🎉</td></tr>';
   $('t_res').classList.remove('hide');
-  M={pts,val,L,u,over,labels,lim,step,pct,ev,mx,im,n,avg,st,name:$('t_fname').textContent};
+  M={pts,val,L,u,over,oov,OL,op,olim,eo,no,labels,lim,step,pct,ev,mx,im,n,avg,st,name:$('t_fname').textContent};
   const cs=getComputedStyle(document.documentElement),g=k=>cs.getPropertyValue(k).trim();
   if(chart)chart.destroy();
-  chart=mkChart($('t_cv'),M,{pri:g('--pri'),red:g('--red'),mut:g('--mut'),bd:g('--bd')},true);
+  chart=mkChart($('t_cv'),M,{pri:g('--pri'),red:g('--red'),ovl:g('--ovl'),mut:g('--mut'),bd:g('--bd')},true);
 }
 function mkChart(cv,M,c,resp){
-  const {val,L,u,over,labels,pct}=M;
+  const {val,L,u,over,oov,OL,op,labels,pct}=M;
   return new Chart(cv,{type:'line',plugins:[{id:'bg',beforeDraw(ch){if(c.bg){const x=ch.ctx;x.save();x.fillStyle=c.bg;x.fillRect(0,0,ch.width,ch.height);x.restore()}}}],
    data:{labels,datasets:[
     {label:pct?'% de carregamento':'kVA',data:val,borderColor:c.pri,borderWidth:c.bg?2:1.5,pointRadius:0,tension:0,
-     segment:{borderColor:x=>over[x.p1DataIndex]||over[x.p0DataIndex]?c.red:c.pri}},
-    {label:'Limite do trafo',data:val.map(()=>L),borderColor:c.red,borderDash:[6,5],borderWidth:c.bg?2:1.5,pointRadius:0}]},
+     segment:{borderColor:x=>oov[x.p1DataIndex]||oov[x.p0DataIndex]?c.ovl:over[x.p1DataIndex]||over[x.p0DataIndex]?c.red:c.pri}},
+    {label:'Limite do trafo',data:val.map(()=>L),borderColor:c.red,borderDash:[6,5],borderWidth:c.bg?2:1.5,pointRadius:0},
+    {label:'Sobrecarga',data:val.map(()=>OL),borderColor:c.ovl,borderDash:[3,4],borderWidth:c.bg?2.5:1.8,pointRadius:0}]},
    options:{responsive:resp,maintainAspectRatio:false,animation:false,devicePixelRatio:resp?undefined:1,interaction:{mode:'index',intersect:false},
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>x.datasetIndex?`Limite: ${L}${u}`:`${x.parsed.y.toFixed(1)}${u}`}}},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>x.datasetIndex===1?`Limite 100%: ${L}${u}`:x.datasetIndex===2?`Sobrecarga ${op}%: ${pct?OL:OL.toFixed(1)}${u}`:`${x.parsed.y.toFixed(1)}${u}`}}},
     scales:{x:{ticks:{color:c.mut,maxTicksLimit:10,maxRotation:0,font:{size:c.bg?18:12}},grid:{color:c.bd}},
-            y:{beginAtZero:true,title:{display:true,text:pct?'% de carregamento':'kVA',color:c.mut,font:{size:c.bg?18:12}},ticks:{color:c.mut,font:{size:c.bg?18:12},callback:v=>v+(pct?'%':'')},grid:{color:c.bd}}}}});
+            y:{beginAtZero:true,suggestedMax:OL*1.08,title:{display:true,text:pct?'% de carregamento':'kVA',color:c.mut,font:{size:c.bg?18:12}},ticks:{color:c.mut,font:{size:c.bg?18:12},callback:v=>v+(pct?'%':'')},grid:{color:c.bd}}}}});
 }
 function dur(m){const h=Math.floor(m/60);return h?`${h} h ${m%60} min`:`${m} min`}
 
 const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
 async function gerarPDF(dl){
   if(!M)return;
-  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'}),W=210,m=14,PRI='#1f4e79',RED='#c00000',OK='#1b7f4b';
+  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'}),W=210,m=14,PRI='#1f4e79',RED='#c00000',OK='#1b7f4b',OVL='#7b1fa2';
   const fill=h=>doc.setFillColor(...hex(h)),txt=h=>doc.setTextColor(...hex(h));
   const sem=s=>s.replace(/[^\x00-\xFF]/g,'-');
   // cabeçalho
   fill(PRI);doc.rect(0,0,W,30,'F');fill('#2e75b6');doc.rect(0,30,W,2,'F');
   txt('#ffffff');doc.setFont('helvetica','bold').setFontSize(19);doc.text('Relatório de Carregamento de Trafo',m,14);
   doc.setFont('helvetica','normal').setFontSize(10);
-  doc.text(sem(`Arquivo: ${M.name}   |   Trafo: ${M.lim} kVA   |   Pontos a cada ${M.step} min`),m,21);
+  doc.text(sem(`Arquivo: ${M.name}   |   Trafo: ${M.lim} kVA   |   Sobrecarga: ${M.op}% (${M.olim.toFixed(1)} kVA)   |   Pontos a cada ${M.step} min`),m,21);
   doc.text('Gerado em '+new Date().toLocaleString('pt-BR'),m,26);
   // cartões
   const cw=(W-2*m-8)/3,ch=19;let y=38;
   M.st.forEach(([k,v,c],i)=>{
     const x=m+(i%3)*(cw+4),yy=y+Math.floor(i/3)*(ch+4);
     fill('#f1f5f9');doc.roundedRect(x,yy,cw,ch,2,2,'F');
-    fill(c==='bad'?RED:c==='good'?OK:PRI);doc.rect(x,yy,1.6,ch,'F');
+    fill(c==='bad'?RED:c==='ovl'?OVL:c==='good'?OK:PRI);doc.rect(x,yy,1.6,ch,'F');
     txt('#667085');doc.setFontSize(8).setFont('helvetica','normal');doc.text(k.toUpperCase(),x+5,yy+6);
-    txt(c==='bad'?RED:c==='good'?OK:'#1b2430');doc.setFont('helvetica','bold').setFontSize(v.length>22?9:12.5);doc.text(v,x+5,yy+14);
+    txt(c==='bad'?RED:c==='ovl'?OVL:c==='good'?OK:'#1b2430');doc.setFont('helvetica','bold').setFontSize(v.length>22?9:12.5);doc.text(v,x+5,yy+14);
   });
-  y+=2*(ch+4)+3;
+  y+=Math.ceil(M.st.length/3)*(ch+4)+3;
   // gráfico
   txt('#1b2430');doc.setFont('helvetica','bold').setFontSize(12);doc.text(M.pct?'Carregamento do trafo (%)':'Potência aparente (kVA)',m,y+3);
   const cv=document.createElement('canvas');cv.width=1400;cv.height=560;
-  const oc=mkChart(cv,M,{pri:PRI,red:RED,mut:'#444444',bd:'#e3e8ee',bg:'#ffffff'},false);
+  const oc=mkChart(cv,M,{pri:PRI,red:RED,ovl:OVL,mut:'#444444',bd:'#e3e8ee',bg:'#ffffff'},false);
   const img=cv.toDataURL('image/png');oc.destroy();
   const iw=W-2*m,ih=iw*560/1400;doc.addImage(img,'PNG',m,y+6,iw,ih);y+=ih+9;
   fill(PRI);doc.rect(m,y,8,1.2,'F');fill(RED);doc.rect(m+38,y,8,1.2,'F');
-  txt('#667085');doc.setFont('helvetica','normal').setFontSize(8);doc.text('Dentro do limite',m+10,y+1.3);doc.text('Acima da potência do trafo',m+48,y+1.3);y+=9;
+  txt('#667085');doc.setFont('helvetica','normal').setFontSize(8);doc.text('Dentro do limite',m+10,y+1.3);doc.text('Acima da potência do trafo',m+48,y+1.3);fill(OVL);doc.rect(m+96,y,8,1.2,'F');doc.text(`Acima de ${M.op}% (sobrecarga)`,m+106,y+1.3);y+=9;
   // tabela
   const head=()=>{fill(PRI);doc.rect(m,y,W-2*m,7,'F');txt('#ffffff');doc.setFont('helvetica','bold').setFontSize(9);
     ['Início','Fim','Duração','Pico (kVA)','Pico (%)'].forEach((t,i)=>doc.text(t,m+3+i*36,y+4.8));y+=7};
@@ -245,6 +305,22 @@ async function gerarPDF(dl){
       const pk=e.pk/M.lim*100,row=[fmt(M.pts[e.i0].d),fmt(M.pts[e.i1].d),dur((e.i1-e.i0+1)*M.step),e.pk.toFixed(1),pk.toFixed(1)+'%'];
       doc.setFont('helvetica','normal').setFontSize(9);
       row.forEach((t,j)=>{txt(j===4?RED:'#1b2430');if(j===4)doc.setFont('helvetica','bold');doc.text(t,m+3+j*36,y+4.5)});y+=6.5});}
+  // sobrecarga
+  y+=8;if(y>250){doc.addPage();y=m}
+  txt('#1b2430');doc.setFont('helvetica','bold').setFontSize(12);doc.text(`Períodos acima de ${M.op}% (sobrecarga)`,m,y);y+=4;
+  const cols=['Início','Fim','Duração','Pontos','Pico (kVA)','Pico (%)'],cx=[0,38,76,108,130,158];
+  const head2=()=>{fill(OVL);doc.rect(m,y,W-2*m,7,'F');txt('#ffffff');doc.setFont('helvetica','bold').setFontSize(9);cols.forEach((t,i)=>doc.text(t,m+3+cx[i],y+4.8));y+=7};
+  if(!M.eo.length){txt(OK);doc.setFont('helvetica','normal').setFontSize(10);doc.text(`Nenhum ponto acima de ${M.op}% no intervalo analisado.`,m,y+5)}
+  else{head2();
+    M.eo.forEach((e,i)=>{
+      if(y>280){doc.addPage();y=m;head2()}
+      if(i%2===0){fill('#f5eefa');doc.rect(m,y,W-2*m,6.5,'F')}
+      const row=[fmt(M.pts[e.i0].d),fmt(M.pts[e.i1].d),dur(e.k*M.step),String(e.k),e.pk.toFixed(1),(e.pk/M.lim*100).toFixed(1)+'%'];
+      doc.setFont('helvetica','normal').setFontSize(9);
+      row.forEach((t,j)=>{txt(j===5?OVL:'#1b2430');if(j===5)doc.setFont('helvetica','bold');doc.text(t,m+3+cx[j],y+4.5)});y+=6.5});
+    if(y>280){doc.addPage();y=m}
+    fill('#e9dcf2');doc.rect(m,y,W-2*m,6.5,'F');txt('#1b2430');doc.setFont('helvetica','bold').setFontSize(9);
+    doc.text('Total',m+3,y+4.5);doc.text(dur(M.no*M.step),m+3+cx[2],y+4.5);doc.text(String(M.no),m+3+cx[3],y+4.5);y+=6.5}
   // rodapé
   const np=doc.getNumberOfPages();
   for(let i=1;i<=np;i++){doc.setPage(i);fill('#dde3ea');doc.rect(m,289,W-2*m,0.3,'F');txt('#667085');doc.setFont('helvetica','normal').setFontSize(8);
@@ -266,8 +342,8 @@ $('t_file').onchange=e=>e.target.files[0]&&load(e.target.files[0]);
 ['dragover','dragenter'].forEach(t=>$('t_drop').addEventListener(t,e=>{e.preventDefault();$('t_drop').classList.add('on')}));
 ['dragleave','drop'].forEach(t=>$('t_drop').addEventListener(t,e=>{e.preventDefault();$('t_drop').classList.remove('on')}));
 $('t_drop').addEventListener('drop',e=>e.dataTransfer.files[0]&&load(e.dataTransfer.files[0]));
-['t_kva','t_step','t_unit'].forEach(id=>$(id).addEventListener('change',render));
-$('t_kva').addEventListener('input',render);
+['t_kva','t_ovl','t_step','t_unit'].forEach(id=>$(id).addEventListener('change',render));
+$('t_kva').addEventListener('input',render);$('t_ovl').addEventListener('input',render);
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',render);
 })();</script>
 <script>(()=>{
@@ -495,12 +571,361 @@ $('drop').addEventListener('drop',e=>e.dataTransfer.files[0]&&load(e.dataTransfe
 ['lim','mina'].forEach(id=>$(id).addEventListener('input',render));
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',render);
 })();</script>
+<script>(()=>{
+/* Núcleo de cálculo PRODIST Módulo 8 (tensão em regime permanente). Puro, sem DOM. */
+function vcalc(D,o){
+  // D: [{t (ms UTC, fim do período integrado), v:[a,b,c]}] ordenado; o: {dt,pmin,amin,amax,pmax,thr}
+  const B=600000,dt=o.dt;
+  const cls=v=>(v<o.pmin||v>o.pmax)?2:(v<o.amin||v>o.amax)?1:0;
+  // 1) agrega em intervalos de 10 min (fim em múltiplo de 10 min)
+  const bins=[];
+  if(dt===10){
+    for(const r of D)bins.push({te:r.t,v:r.v.slice(),mn:Math.min(...r.v)});
+  }else{
+    let cur=null;
+    for(const r of D){
+      const te=Math.ceil(r.t/B)*B;
+      if(!cur||cur.te!==te){if(cur&&cur.n===2)bins.push(cur);cur={te,n:0,s:[0,0,0],mn:Infinity}}
+      cur.n++;for(let i=0;i<3;i++)cur.s[i]+=r.v[i];cur.mn=Math.min(cur.mn,...r.v);
+      if(cur.n===2){cur.v=cur.s.map(x=>x/2)}
+    }
+    if(cur&&cur.n===2)bins.push(cur);
+  }
+  // 2) expurgo e classificação
+  const valid=[],ex=[];
+  for(const b of bins){
+    if(b.mn<=o.thr){b.ex=true;ex.push(b)}
+    else{b.c=b.v.map(cls);b.w=Math.max(...b.c);valid.push(b)}
+  }
+  // 3) conjuntos de 1008 leituras válidas consecutivas
+  const N=1008,sets=[];let cur=null;
+  for(const b of valid){
+    if(!cur)cur={i0:b.te-B,n:0,lp:[0,0,0],lc:[0,0,0]};
+    cur.n++;
+    for(let i=0;i<3;i++){if(b.c[i]===1)cur.lp[i]++;else if(b.c[i]===2)cur.lc[i]++}
+    cur.i1=b.te;
+    if(cur.n===N){cur.drp=Math.max(...cur.lp)/N*100;cur.drc=Math.max(...cur.lc)/N*100;cur.ok=cur.drp<=3&&cur.drc<=0.5;sets.push(cur);cur=null}
+  }
+  const rest=cur;
+  // 4) mensal
+  const mm={};
+  for(const s of sets){const d=new Date(s.i1-1),k=d.getUTCFullYear()*100+d.getUTCMonth()+1;(mm[k]=mm[k]||[]).push(s)}
+  const months=Object.keys(mm).sort().map(k=>{const a=mm[k],drp=a.reduce((t,s)=>t+s.drp,0)/a.length,drc=a.reduce((t,s)=>t+s.drc,0)/a.length;return{k:+k,n:a.length,drp,drc,ok:drp<=3&&drc<=0.5}});
+  // 5) resumo por fase (todo o período válido)
+  const ph=[0,1,2].map(i=>{let s=0,mn=Infinity,mx=-Infinity,p=0,c=0;for(const b of valid){const v=b.v[i];s+=v;if(v<mn)mn=v;if(v>mx)mx=v;if(b.c[i]===1)p++;else if(b.c[i]===2)c++}const n=valid.length;return{avg:n?s/n:NaN,mn,mx,p,c,drp:n?p/n*100:0,drc:n?c/n*100:0}});
+  // 6) eventos fora da faixa adequada (sequências de leituras consecutivas)
+  const evs=[];let e=null;
+  for(const b of valid){
+    if(b.w>0){
+      if(e&&b.te-B===e.te){e.te=b.te;e.w=Math.max(e.w,b.w);e.n++}
+      else{if(e)evs.push(e);e={ts:b.te-B,te:b.te,w:b.w,n:1,ph:[0,0,0],mn:Infinity,mx:-Infinity}}
+      for(let i=0;i<3;i++){if(b.c[i]>0)e.ph[i]=1;if(b.v[i]<e.mn)e.mn=b.v[i];if(b.v[i]>e.mx)e.mx=b.v[i]}
+    }else if(e){evs.push(e);e=null}
+  }
+  if(e)evs.push(e);
+  // 7) expurgos agrupados
+  const exs=[];let x=null;
+  for(const b of ex){
+    if(x&&b.te-B===x.te){x.te=b.te;x.n++}else{if(x)exs.push(x);x={ts:b.te-B,te:b.te,n:1,ph:[0,0,0]}}
+    for(let i=0;i<3;i++)if(b.v[i]<=o.thr)x.ph[i]=1;
+  }
+  if(x)exs.push(x);
+  return{bins:bins.length,valid,ex,exs,sets,rest,months,ph,evs};
+}
+const $=id=>document.getElementById(id);
+let D=[],meta={},M=null,CH={},DL=null;
+const PH=['#e8913a','#3b82f6','#22a67a'],PN=['A','B','C'],AMB='#d97706',BAND=600000;
+const SYS={220:{pmin:191,amin:202,amax:231,pmax:233,thr:22},127:{pmin:110,amin:117,amax:133,pmax:135,thr:12.7}};
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const norm=s=>String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
+const p2=n=>String(n).padStart(2,'0');
+const fmtT=t=>{const d=new Date(t);return `${p2(d.getUTCDate())}/${p2(d.getUTCMonth()+1)} ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`};
+const f1=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+const f2=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=v=>{if(typeof v==='number')return v;if(v==null||String(v).trim()==='')return NaN;return parseFloat(String(v).replace(/\./g,'').replace(',','.'))};
+function toDate(v){
+  if(typeof v==='number'&&v>20000)return Math.round((v-25569)*864e5);
+  if(v instanceof Date)return Date.UTC(v.getFullYear(),v.getMonth(),v.getDate(),v.getHours(),v.getMinutes());
+  const m=String(v).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})[ T]+(\d{1,2}):(\d{2})/);
+  if(m)return Date.UTC(+m[3],m[2]-1,+m[1],+m[4],+m[5]);
+  return NaN;
+}
+const dur=m=>{const d=Math.floor(m/1440),h=Math.floor(m%1440/60),n=Math.round(m%60);return (d?d+' d ':'')+(h?h+' h ':'')+(n||(!d&&!h)?n+' min':'')};
+const mlab=k=>MES[k%100-1]+'/'+Math.floor(k/100);
+const phs=a=>a.map((x,i)=>x?PN[i]:'').filter(Boolean).join(', ');
+const clsName=w=>w===2?'Crítica':'Precária';
+function fail(t){$('v_msg').textContent=t;$('v_res').classList.add('hide')}
+
+function applySys(){
+  const s=$('v_sys').value,cu=s==='custom';
+  ['v_pmin','v_amin','v_amax','v_pmax'].forEach(id=>$(id).disabled=!cu);
+  if(!cu){const p=SYS[s];$('v_pmin').value=p.pmin;$('v_amin').value=p.amin;$('v_amax').value=p.amax;$('v_pmax').value=p.pmax;$('v_thr').value=p.thr}
+}
+
+function load(file){
+  $('v_msg').textContent='';$('v_fname').textContent=file.name;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      let a;
+      if(/\.xls/i.test(file.name)){
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        a=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null});
+      }else{
+        let t=new TextDecoder('utf-8').decode(e.target.result);
+        if(t.includes('\ufffd'))t=new TextDecoder('latin1').decode(e.target.result);
+        a=t.split(/\r?\n/).map(l=>l.split(';'));
+      }
+      let h=-1;
+      for(let i=0;i<Math.min(a.length,60);i++){const n=a[i].map(norm);if(n.some(x=>x.startsWith('datahora'))&&n.includes('va')&&n.includes('vb')&&n.includes('vc')){h=i;break}}
+      if(h<0)return fail('Não encontrei o cabeçalho (colunas "Data/Hora", "V_a", "V_b" e "V_c"). Confira se a planilha é a de tensão.');
+      const hd=a[h].map(norm),c={d:hd.findIndex(x=>x.startsWith('datahora')),a:hd.indexOf('va'),b:hd.indexOf('vb'),c:hd.indexOf('vc')};
+      meta={};
+      a.slice(0,h).forEach(r=>{const s=r.join(' ');let m;if(m=s.match(/ponto:?\s*;?\s*([\w-]+)/i))meta.ponto=m[1];if(m=s.match(/medidor:?\s*;?\s*(\d+)/i))meta.med=m[1]});
+      D=[];
+      for(let i=h+1;i<a.length;i++){
+        const r=a[i],t=toDate(r[c.d]),x=num(r[c.a]),y=num(r[c.b]),z=num(r[c.c]);
+        if(isNaN(t)||isNaN(x)||isNaN(y)||isNaN(z))continue;
+        D.push({t,v:[x,y,z]});
+      }
+      if(D.length<4)return fail('Nenhuma linha com data e tensões válidas foi encontrada.');
+      D.sort((p,q)=>p.t-q.t);
+      const df=[];for(let i=1;i<Math.min(D.length,200);i++)df.push(Math.round((D[i].t-D[i-1].t)/6e4));
+      df.sort((p,q)=>p-q);meta.dt=df[df.length>>1];
+      if(meta.dt!==5&&meta.dt!==10)return fail(`O intervalo da memória é de ${meta.dt} min. Esta análise aceita leituras de 5 ou 10 min.`);
+      const md=D.map(r=>r.v[0]).sort((p,q)=>p-q)[D.length>>1];
+      $('v_sys').value=md<160?'127':'220';applySys();
+      const iso=t=>new Date(t).toISOString().slice(0,10);
+      $('v_d0').value=iso(D[0].t);$('v_d1').value=iso(D[D.length-1].t);
+      $('v_fname').textContent=file.name+(meta.ponto?`  ·  Ponto ${meta.ponto}`:'')+(meta.med?`  ·  Medidor ${meta.med}`:'')+`  ·  ${D.length.toLocaleString('pt-BR')} leituras de ${meta.dt} min`;
+      render();
+    }catch(err){fail('Não consegui ler o arquivo: '+err.message)}
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function mkv(cv,labels,sets,ytitle,unit,c,resp,dec){
+  const big=!!c.bg,fs=big?18:12;
+  return new Chart(cv,{type:'line',
+    plugins:[{id:'bg',beforeDraw(x){if(c.bg){const q=x.ctx;q.save();q.fillStyle=c.bg;q.fillRect(0,0,x.width,x.height);q.restore()}}}],
+    data:{labels,datasets:sets.map(s=>s.bar?{type:'bar',label:s.l,data:s.d,backgroundColor:s.c,borderWidth:0}:{type:'line',label:s.l,data:s.d,borderColor:s.c,borderWidth:big?2:1.5,pointRadius:0,tension:0,borderDash:s.dash||[],spanGaps:false})},
+    options:{responsive:resp,maintainAspectRatio:false,animation:false,devicePixelRatio:resp?undefined:1,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>`${x.dataset.label}: ${x.parsed.y==null?'-':(dec===2?f2(x.parsed.y):f1(x.parsed.y))}${unit}`}}},
+      scales:{x:{ticks:{color:c.mut,maxTicksLimit:10,maxRotation:0,font:{size:fs}},grid:{color:c.bd}},
+        y:{beginAtZero:dec===2,title:{display:true,text:ytitle,color:c.mut,font:{size:fs}},ticks:{color:c.mut,font:{size:fs}},grid:{color:c.bd}}}}});
+}
+const phSets=(ph,pre='Fase ')=>ph.map((d,i)=>({l:pre+PN[i],d,c:PH[i]}));
+const limSets=(n,o,c)=>[{l:'Limite adequada (mín.)',d:Array(n).fill(o.amin),c:AMB,dash:[6,5]},{l:'Limite adequada (máx.)',d:Array(n).fill(o.amax),c:AMB,dash:[6,5]},{l:'Limite crítica (mín.)',d:Array(n).fill(o.pmin),c:c.red,dash:[2,4]},{l:'Limite crítica (máx.)',d:Array(n).fill(o.pmax),c:c.red,dash:[2,4]}];
+const legPh=PN.map((n,i)=>`<i style="background:${PH[i]}"></i>Fase ${n}`).join('');
+const legLim=`<i style="background:${AMB}"></i>Limites da faixa adequada (tracejado)<i style="background:var(--red)"></i>Limites da faixa crítica (pontilhado)`;
+
+function agg(valid,g,mode){
+  const ms=g*6e4,m=new Map();
+  for(const b of valid){
+    const k=Math.floor(b.te/ms);let o=m.get(k);
+    if(!o){o={n:0,s:[0,0,0],mn:[Infinity,Infinity,Infinity],mx:[-Infinity,-Infinity,-Infinity]};m.set(k,o)}
+    o.n++;for(let i=0;i<3;i++){o.s[i]+=b.v[i];if(b.v[i]<o.mn[i])o.mn[i]=b.v[i];if(b.v[i]>o.mx[i])o.mx[i]=b.v[i]}
+  }
+  const ks=[...m.keys()],k0=Math.min(...ks),k1=Math.max(...ks),labels=[],ph=[[],[],[]];
+  for(let k=k0;k<=k1;k++){
+    labels.push(fmtT(k*ms));const o=m.get(k);
+    for(let i=0;i<3;i++)ph[i].push(o?(mode==='min'?o.mn[i]:mode==='max'?o.mx[i]:o.s[i]/o.n):null);
+  }
+  return{labels,ph};
+}
+
+function render(){
+  if(!D.length)return;
+  const o={dt:meta.dt,pmin:+$('v_pmin').value,amin:+$('v_amin').value,amax:+$('v_amax').value,pmax:+$('v_pmax').value,thr:+$('v_thr').value};
+  const g=+$('v_grp').value,mode=$('v_mode').value,mind=+$('v_mind').value;
+  if([o.pmin,o.amin,o.amax,o.pmax,o.thr].some(x=>isNaN(x))||!(o.pmin<o.amin&&o.amin<o.amax&&o.amax<o.pmax))return fail('Confira as faixas: precária (mín.) < adequada (mín.) < adequada (máx.) < precária (máx.).');
+  const dv=id=>{const v=$(id).value;if(!v)return null;const[y,m,d]=v.split('-').map(Number);return Date.UTC(y,m-1,d)};
+  const t0=dv('v_d0')??-Infinity,t1=(dv('v_d1')??Infinity)+864e5;
+  const S=D.filter(r=>r.t>=t0&&r.t<t1);
+  if(S.length<4)return fail('Nenhuma leitura no período escolhido.');
+  const R=vcalc(S,o);
+  if(!R.valid.length)return fail('Nenhum intervalo válido de 10 min no período (confira o limite de expurgo).');
+  $('v_msg').textContent='';
+  const nS=R.sets.length,nBad=R.sets.filter(s=>!s.ok).length,nm=R.months.length,nmOk=R.months.filter(m=>m.ok).length;
+  const drpM=nS?Math.max(...R.sets.map(s=>s.drp)):null,drcM=nS?Math.max(...R.sets.map(s=>s.drc)):null;
+  const na='sem conjunto completo';
+  const st=[
+    ['Conjuntos de 1008 leituras',nS?`${nS} completo(s)${nBad?` · ${nBad} fora do limite`:''}`:na,nS?(nBad?'bad':'good'):''],
+    ['DRP máximo (limite 3%)',nS?f2(drpM)+'%':'-',nS?(drpM>3?'bad':'good'):''],
+    ['DRC máximo (limite 0,5%)',nS?f2(drcM)+'%':'-',nS?(drcM>0.5?'bad':'good'):''],
+    ...[0,1,2].map(i=>[`Fase ${PN[i]} (média · mín. · máx.)`,`${f1(R.ph[i].avg)} · ${f1(R.ph[i].mn)} · ${f1(R.ph[i].mx)} V`,'']),
+    ['Leituras de 10 min',`${R.valid.length.toLocaleString('pt-BR')} válidas · ${R.ex.length.toLocaleString('pt-BR')} expurgadas`,''],
+    ['Conformidade mensal',nm?`${nmOk} de ${nm} mês(es) conforme(s)`:'-',nm?(nmOk===nm?'good':'bad'):''],
+    ['Período',fmtT(S[0].t)+' a '+fmtT(S[S.length-1].t),'']];
+  $('v_stats').innerHTML=st.map(([k,v,c])=>`<div class="st"><small>${k}</small><strong class="${c}">${v}</strong></div>`).join('');
+  $('v_bands').textContent=`Faixas aplicadas (tensão fase-neutro): adequada de ${o.amin} a ${o.amax} V; precária de ${o.pmin} a menos de ${o.amin} V e acima de ${o.amax} até ${o.pmax} V; crítica abaixo de ${o.pmin} V ou acima de ${o.pmax} V. Expurgo: intervalos com tensão ≤ ${o.thr} V em alguma fase.`+(R.rest?` Há ${R.rest.n.toLocaleString('pt-BR')} leituras válidas no fim do período, que não completam um conjunto de 1008 e não entram no DRP e no DRC.`:'');
+  // tabelas
+  $('v_ph').innerHTML=R.ph.map((p,i)=>`<tr><td><span class="dot" style="background:${PH[i]}"></span>Fase ${PN[i]}</td><td>${f1(p.avg)}</td><td>${f1(p.mn)}</td><td>${f1(p.mx)}</td><td>${p.p.toLocaleString('pt-BR')}</td><td class="${p.c?'bad':''}">${p.c.toLocaleString('pt-BR')}</td><td>${f2(p.drp)}</td><td class="${p.drc>0.5?'bad':''}">${f2(p.drc)}</td></tr>`).join('');
+  $('v_mo').innerHTML=nm?R.months.map(m=>`<tr><td>${mlab(m.k)}</td><td>${m.n}</td><td class="${m.drp>3?'bad':''}">${f2(m.drp)}</td><td class="${m.drc>0.5?'bad':''}">${f2(m.drc)}</td><td class="${m.ok?'good':'bad'}">${m.ok?'Conforme':'Não conforme'}</td></tr>`).join(''):'<tr><td colspan="5">Menos de 1008 leituras válidas: não há conjunto completo para apurar o mês.</td></tr>';
+  const srows=R.sets.map((s,i)=>`<tr><td>${i+1}</td><td>${fmtT(s.i0)}</td><td>${fmtT(s.i1)}</td><td>${s.n}</td><td class="${s.drp>3?'bad':''}">${f2(s.drp)}</td><td class="${s.drc>0.5?'bad':''}">${f2(s.drc)}</td><td class="${s.ok?'good':'bad'}">${s.ok?'Conforme':'Não conforme'}</td></tr>`);
+  if(R.rest)srows.push(`<tr><td>-</td><td>${fmtT(R.rest.i0)}</td><td>${fmtT(R.rest.i1)}</td><td>${R.rest.n}</td><td colspan="3">Conjunto incompleto (não apurado)</td></tr>`);
+  $('v_set').innerHTML=srows.join('');
+  const evf=R.evs.map(e=>({...e,min:(e.te-e.ts)/6e4})).filter(e=>e.min>=mind).sort((x,y)=>y.min-x.min),show=evf.slice(0,50);
+  $('v_ev').innerHTML=show.length?show.map(e=>`<tr><td>${fmtT(e.ts)}</td><td>${fmtT(e.te)}</td><td>${dur(e.min)}</td><td class="${e.w===2?'bad':'warn'}">${clsName(e.w)}</td><td>${phs(e.ph)}</td><td>${f1(e.mn)}</td><td>${f1(e.mx)}</td></tr>`).join(''):'<tr><td colspan="7" class="good">Nenhum período fora da faixa adequada 🎉</td></tr>';
+  $('v_evn').textContent=evf.length>50?`Mostrando os 50 maiores (por duração) de ${evf.length} períodos.`:evf.length?`${evf.length} período(s), ordenados por duração.`:'';
+  $('v_ex').innerHTML=R.exs.length?R.exs.map(x=>`<tr><td>${fmtT(x.ts)}</td><td>${fmtT(x.te)}</td><td>${dur((x.te-x.ts)/6e4)}</td><td>${phs(x.ph)}</td></tr>`).join(''):'<tr><td colspan="4" class="good">Nenhum intervalo expurgado</td></tr>';
+  $('v_res').classList.remove('hide');
+  // gráficos
+  const A=agg(R.valid,g,mode),n1=A.labels.length;
+  const hr=[0,1,2].map(()=>Array(24).fill(0)),hn=Array(24).fill(0);
+  R.valid.forEach(b=>{const h=new Date(b.te-BAND).getUTCHours();hn[h]++;for(let i=0;i<3;i++)hr[i][h]+=b.v[i]});
+  const H=hr.map(a=>a.map((s,h)=>hn[h]?s/hn[h]:null)),hl=[...Array(24).keys()].map(h=>p2(h)+'h');
+  const cs=getComputedStyle(document.documentElement),gv=k=>cs.getPropertyValue(k).trim();
+  const c={pri:gv('--pri'),red:gv('--red'),mut:gv('--mut'),bd:gv('--bd')};
+  Object.values(CH).forEach(x=>x.destroy());
+  const dl=R.sets.map(s=>fmtT(s.i1));
+  const s2=[{l:'DRP (%)',d:R.sets.map(s=>s.drp),c:AMB,bar:1},{l:'DRC (%)',d:R.sets.map(s=>s.drc),c:c.red,bar:1},{l:'Limite DRP (3%)',d:dl.map(()=>3),c:AMB,dash:[6,5]},{l:'Limite DRC (0,5%)',d:dl.map(()=>0.5),c:c.red,dash:[6,5]}];
+  CH={c1:mkv($('v_c1'),A.labels,[...phSets(A.ph),...limSets(n1,o,c)],'Tensão (V)',' V',c,true),
+      c2:mkv($('v_c2'),dl,s2,'Leituras fora da faixa (%)','%',c,true,2),
+      c3:mkv($('v_c3'),hl,[...phSets(H),...limSets(24,o,c)],'Tensão média (V)',' V',c,true)};
+  $('v_lg1').innerHTML=legPh+legLim;$('v_lg3').innerHTML=legPh+legLim;
+  $('v_lg2').innerHTML=`<i style="background:${AMB}"></i>DRP (precárias)<i style="background:var(--red)"></i>DRC (críticas)`;
+  $('v_n2').textContent=nS?'Cada barra é um conjunto de 1008 leituras, posicionada no horário em que o conjunto termina. Linhas tracejadas: limites de 3% (DRP) e 0,5% (DRC).':'Não há 1008 leituras válidas no período: o DRP e o DRC da norma não podem ser apurados.';
+  M={S,R,o,g,mode,st,evf,name:$('v_fname').textContent,A,dl,s2};
+}
+
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+async function gerarPDF(dl){
+  if(!M)return;
+  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'}),W=210,m=14,PRI='#1f4e79',RED='#c00000',OK='#1b7f4b';
+  const fill=h=>doc.setFillColor(...hex(h)),txt=h=>doc.setTextColor(...hex(h));
+  fill(PRI);doc.rect(0,0,W,30,'F');fill('#2e75b6');doc.rect(0,30,W,2,'F');
+  txt('#ffffff');doc.setFont('helvetica','bold').setFontSize(18);doc.text('Relatório de Tensão em Regime Permanente',m,13);
+  doc.setFont('helvetica','normal').setFontSize(9.5);
+  doc.text('Verificação conforme PRODIST Módulo 8 (pré-diagnóstico com memória de massa)',m,19);
+  doc.text(`${M.name}`.slice(0,110),m,24);
+  doc.text(`Gráficos agrupados a cada ${M.g} min (${M.mode==='min'?'mínimo':M.mode==='max'?'máximo':'média'})   |   Gerado em ${new Date().toLocaleString('pt-BR')}`,m,28.5);
+  const cw=(W-2*m-8)/3,ch=17;let y=38;
+  M.st.slice(0,9).forEach(([k,v,c],i)=>{
+    const x=m+(i%3)*(cw+4),yy=y+Math.floor(i/3)*(ch+3);
+    fill('#f1f5f9');doc.roundedRect(x,yy,cw,ch,2,2,'F');
+    fill(c==='bad'?RED:c==='good'?OK:PRI);doc.rect(x,yy,1.6,ch,'F');
+    txt('#667085');doc.setFontSize(7.5).setFont('helvetica','normal');doc.text(k.toUpperCase().slice(0,34),x+5,yy+5.5);
+    txt(c==='bad'?RED:c==='good'?OK:'#1b2430');doc.setFont('helvetica','bold').setFontSize(v.length>30?6.5:v.length>24?7.5:v.length>18?9:11);doc.text(v,x+5,yy+12);
+  });
+  y+=3*(ch+3)+1;
+  doc.setFont('helvetica','normal').setFontSize(8);txt('#667085');
+  doc.splitTextToSize($('v_bands').textContent,W-2*m).forEach(l=>{doc.text(l,m,y+3);y+=3.8});y+=5;
+  const cc={pri:PRI,red:RED,mut:'#444444',bd:'#e3e8ee',bg:'#ffffff'},iw=W-2*m,ih=iw*480/1400;
+  const put=(title,labels,sets,yt,unit,legend,dec)=>{
+    if(y>215){doc.addPage();y=m}
+    txt('#1b2430');doc.setFont('helvetica','bold').setFontSize(12);doc.text(title,m,y+3);
+    const cv=document.createElement('canvas');cv.width=1400;cv.height=480;
+    const oc=mkv(cv,labels,sets,yt,unit,cc,false,dec),img=cv.toDataURL('image/jpeg',0.88);oc.destroy();
+    doc.addImage(img,'JPEG',m,y+6,iw,ih);y+=ih+9;
+    legend.forEach(([col,t],i)=>{fill(col);doc.rect(m+i*40,y,8,1.2,'F');txt('#667085');doc.setFont('helvetica','normal').setFontSize(8);doc.text(t,m+i*40+10,y+1.3)});y+=7;
+  };
+  put('Tensão por fase (V)',M.A.labels,[...phSets(M.A.ph),...limSets(M.A.labels.length,M.o,cc)],'Tensão (V)',' V',[...PN.map((n,i)=>[PH[i],'Fase '+n]),[AMB,'Faixa adequada'],[RED,'Faixa crítica']]);
+  put('DRP e DRC por conjunto de 1008 leituras',M.dl,M.s2.map(s=>({...s,c:s.c===AMB?AMB:RED})),'Leituras fora da faixa (%)','%',[[AMB,'DRP (precárias)'],[RED,'DRC (críticas)']],2);
+  const tbl=(title,cols,data,colw)=>{
+    if(y>245){doc.addPage();y=m}
+    txt('#1b2430');doc.setFont('helvetica','bold').setFontSize(12);doc.text(title,m,y);y+=4;
+    const head=()=>{fill(PRI);doc.rect(m,y,W-2*m,7,'F');txt('#ffffff');doc.setFont('helvetica','bold').setFontSize(8.5);let x=m+3;cols.forEach((t,i)=>{doc.text(t,x,y+4.8);x+=colw[i]});y+=7};
+    head();
+    data.forEach((r,k)=>{
+      if(y>280){doc.addPage();y=m;head()}
+      if(k%2===0){fill('#f1f5f9');doc.rect(m,y,W-2*m,6.5,'F')}
+      doc.setFont('helvetica','normal').setFontSize(8.5);let x=m+3;
+      r.forEach((t,i)=>{txt('#1b2430');doc.text(String(t),x,y+4.5);x+=colw[i]});y+=6.5;
+    });y+=6;
+  };
+  const R=M.R;
+  tbl('Resumo por fase (todo o período válido)',['Fase','Média (V)','Mín. (V)','Máx. (V)','Precárias','Críticas','DRP (%)','DRC (%)'],R.ph.map((p,i)=>['Fase '+PN[i],f1(p.avg),f1(p.mn),f1(p.mx),p.p,p.c,f2(p.drp),f2(p.drc)]),[20,24,22,22,22,22,22,22]);
+  if(R.months.length)tbl('Apuração mensal (limites: DRP ≤ 3% e DRC ≤ 0,5%)',['Mês','Conjuntos','DRP médio (%)','DRC médio (%)','Situação'],R.months.map(x=>[mlab(x.k),x.n,f2(x.drp),f2(x.drc),x.ok?'Conforme':'Não conforme']),[30,30,38,38,40]);
+  if(R.sets.length)tbl('Conjuntos de 1008 leituras',['#','Início','Fim','DRP (%)','DRC (%)','Situação'],R.sets.map((s,i)=>[i+1,fmtT(s.i0),fmtT(s.i1),f2(s.drp),f2(s.drc),s.ok?'Conforme':'Não conforme']),[12,34,34,28,28,40]);
+  if(M.evf.length)tbl(`Períodos fora da faixa adequada (${Math.min(30,M.evf.length)} maiores de ${M.evf.length})`,['Início','Fim','Duração','Classe','Fases','Mín. (V)','Máx. (V)'],M.evf.slice(0,30).map(e=>[fmtT(e.ts),fmtT(e.te),dur(e.min),clsName(e.w),phs(e.ph),f1(e.mn),f1(e.mx)]),[28,28,28,22,22,24,24]);
+  if(R.exs.length)tbl('Intervalos expurgados (interrupções)',['Início','Fim','Duração','Fases'],R.exs.map(x=>[fmtT(x.ts),fmtT(x.te),dur((x.te-x.ts)/6e4),phs(x.ph)]),[40,40,40,40]);
+  if(y>262){doc.addPage();y=m}
+  doc.setFont('helvetica','normal').setFontSize(8);txt('#667085');
+  doc.splitTextToSize('Pré-diagnóstico com médias de 5 min de medidor de faturamento: não identifica variações de tensão de curta duração (VTCD) e não substitui a medição de conformidade com instrumento de qualidade de energia. Confira as faixas e a versão vigente do Módulo 8 antes de usar em relatório oficial.',W-2*m).forEach(l=>{doc.text(l,m,y+3);y+=3.8});
+  const np=doc.getNumberOfPages();
+  for(let i=1;i<=np;i++){doc.setPage(i);fill('#dde3ea');doc.rect(m,289,W-2*m,0.3,'F');txt('#667085');doc.setFont('helvetica','normal').setFontSize(8);
+    doc.text('Analisador de Tensão (PRODIST Módulo 8)',m,293);doc.text(`Página ${i} de ${np}`,W-m,293,{align:'right'})}
+  const base=(M.name||'planilha').split('  ·')[0].replace(/\.[^.]+$/,'').replace(/[^\w-]+/g,'_').slice(0,60);
+  const fn=`Relatorio_Tensao_${base}.pdf`;
+  if(dl)await dl.save({filename:fn,data:doc.output('blob')});else doc.save(fn);
+}
+(async()=>{try{DL=window.claude&&await claude.use('downloads')}catch(e){DL=null}})();
+$('v_prt').onclick=()=>{try{window.print()}catch(e){$('v_msg').textContent='Não foi possível abrir a impressão neste navegador.'}};
+$('v_pdf').onclick=async()=>{
+  $('v_msg').textContent='';
+  try{await gerarPDF(DL)}catch(e){$('v_msg').textContent=e&&e.code==='declined'?'Download cancelado.':'Não consegui salvar o PDF ('+(e&&(e.message||e.code)||'erro')+').'}
+};
+$('v_drop').onclick=()=>$('v_file').click();
+$('v_file').onchange=e=>e.target.files[0]&&load(e.target.files[0]);
+['dragover','dragenter'].forEach(t=>$('v_drop').addEventListener(t,e=>{e.preventDefault();$('v_drop').classList.add('on')}));
+['dragleave','drop'].forEach(t=>$('v_drop').addEventListener(t,e=>{e.preventDefault();$('v_drop').classList.remove('on')}));
+$('v_drop').addEventListener('drop',e=>e.dataTransfer.files[0]&&load(e.dataTransfer.files[0]));
+$('v_sys').addEventListener('change',()=>{applySys();render()});
+['v_grp','v_mode','v_mind','v_d0','v_d1'].forEach(id=>$(id).addEventListener('change',render));
+['v_pmin','v_amin','v_amax','v_pmax','v_thr'].forEach(id=>$(id).addEventListener('input',render));
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',render);
+})();</script>
+<script>(()=>{
+const $=id=>document.getElementById(id);
+const norm=x=>String(x==null?'':x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+const TIPO={t:['tab_t','t_file','Carregamento do trafo'],b:['tab_b','file','Balanceamento de fases'],v:['tab_v','v_file','Tensão (PRODIST Módulo 8)']};
+function kind(a){
+  for(let i=0;i<Math.min(a.length,60);i++){
+    const n=(a[i]||[]).map(norm),dh=n.some(x=>x.startsWith('datahora'));
+    if(dh&&n.includes('va')&&n.includes('vb')&&n.includes('vc'))return 'v';
+    if(dh&&n.includes('ia')&&n.includes('ib')&&n.includes('ic'))return 'b';
+    if((dh||n.includes('data'))&&(n.includes('w')||n.includes('kva')||n.includes('kw')))return 't';
+  }
+  return null;
+}
+function detect(f){
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        let a;
+        if(/\.xls/i.test(f.name)){const wb=XLSX.read(e.target.result,{type:'array'});a=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null,sheetRows:80})}
+        else{let t=new TextDecoder('utf-8').decode(e.target.result.slice(0,20000));if(t.includes('\ufffd'))t=new TextDecoder('latin1').decode(e.target.result.slice(0,20000));a=t.split(/\r?\n/).slice(0,80).map(l=>l.split(';'))}
+        res(kind(a));
+      }catch(err){res(null)}
+    };
+    r.onerror=()=>res(null);
+    r.readAsArrayBuffer(f);
+  });
+}
+async function handle(files){
+  files=[...files];if(!files.length)return;
+  $('u_msg').textContent='';$('u_list').textContent='Lendo...';
+  const out=[],used={},ign=[];
+  for(const f of files){
+    const k=await detect(f);
+    if(!k){ign.push(`${f.name}: tipo não reconhecido`);continue}
+    if(used[k]){ign.push(`${f.name}: já há um arquivo de ${TIPO[k][2].toLowerCase()} (usei ${used[k]})`);continue}
+    used[k]=f.name;out.push([k,f]);
+  }
+  $('u_list').innerHTML=out.map(([k,f])=>`✔ ${f.name} <b>→ ${TIPO[k][2]}</b>`).join('<br>');
+  $('u_msg').innerHTML=ign.join('<br>');
+  if(!out.length){if(!ign.length)$('u_list').textContent='';return}
+  for(const [k,f] of out){
+    const inp=$(TIPO[k][1]),dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;
+    inp.dispatchEvent(new Event('change'));
+  }
+  const first=document.querySelector(`.tab[data-t="${TIPO[out[0][0]][0]}"]`);if(first)first.click();
+}
+$('u_drop').onclick=()=>$('u_file').click();
+$('u_file').onchange=e=>{handle(e.target.files);e.target.value=''};
+['dragover','dragenter'].forEach(t=>$('u_drop').addEventListener(t,e=>{e.preventDefault();$('u_drop').classList.add('on')}));
+['dragleave','drop'].forEach(t=>$('u_drop').addEventListener(t,e=>{e.preventDefault();$('u_drop').classList.remove('on')}));
+$('u_drop').addEventListener('drop',e=>handle(e.dataTransfer.files));
+})();</script>
 <script>
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
-  ['tab_t','tab_b'].forEach(id=>document.getElementById(id).classList.toggle('hide',id!==b.dataset.t));
+  ['tab_t','tab_b','tab_v'].forEach(id=>document.getElementById(id).classList.toggle('hide',id!==b.dataset.t));
   window.dispatchEvent(new Event('resize'));
 });
 </script>
 </body>
 </html>
+</body></html>
