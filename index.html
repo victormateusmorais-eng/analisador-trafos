@@ -39,13 +39,19 @@ button.pdf:hover{filter:brightness(1.1)} button.alt{background:transparent;color
 .legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin:0 5px 0 12px}.legend i:first-child{margin-left:0}
 .note{font-size:.82rem;color:var(--mut);margin:8px 0 0}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
-@media print{.drop,.opts,.acts,.msg,.sub,.tabs,#s_card{display:none!important}body{background:#fff;color:#000}.card{break-inside:avoid;border-color:#ccc}.chartbox{height:300px}:root{--bg:#fff;--card:#fff;--txt:#1b2430;--mut:#667085;--bd:#dde3ea;--pri:#1f4e79;--red:#c00000;--ok:#1b7f4b;--ovl:#7b1fa2}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media print{.drop,.opts,.acts,.msg,.sub,.tabs,#s_card,.zbar{display:none!important}.chartbox.big{height:300px}body{background:#fff;color:#000}.card{break-inside:avoid;border-color:#ccc}.chartbox{height:300px}:root{--bg:#fff;--card:#fff;--txt:#1b2430;--mut:#667085;--bd:#dde3ea;--pri:#1f4e79;--red:#c00000;--ok:#1b7f4b;--ovl:#7b1fa2}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
 .tab{font:inherit;font-weight:600;color:var(--pri);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 16px;cursor:pointer}
 .tab.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 input:disabled{opacity:.6;cursor:not-allowed}
 .warn{color:#d97706}
+.zbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end;margin:0 0 6px}
+.zbar small{color:var(--mut);font-size:.75rem;margin-right:auto}
+.zb{font:inherit;font-size:.8rem;font-weight:600;color:var(--pri);background:transparent;border:1px solid var(--bd);border-radius:8px;padding:5px 9px;cursor:pointer}
+.zb:hover{border-color:var(--pri)}
+.chartbox.big{height:min(78vh,760px)}
+.chartbox canvas{touch-action:pan-y}
 .svrow{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
 .svrow label{flex:1 1 260px}.svrow input{width:100%}
 .btn{font:inherit;font-weight:600;color:#fff;background:var(--pri);border:0;border-radius:10px;padding:9px 14px;cursor:pointer}
@@ -184,6 +190,19 @@ input:disabled{opacity:.6;cursor:not-allowed}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+<script>(()=>{
+try{
+  const Z=window.ChartZoom;if(Z&&window.Chart)Chart.register(Z.default||Z);
+  const fine=matchMedia('(pointer:fine)').matches;
+  Chart.defaults.plugins.zoom={
+    limits:{x:{min:'original',max:'original'},y:{min:'original',max:'original'}},
+    pan:{enabled:true,mode:'x',modifierKey:fine?'shift':null},
+    zoom:{wheel:{enabled:true,modifierKey:'ctrl'},pinch:{enabled:true},drag:{enabled:fine,backgroundColor:'rgba(46,117,182,.15)',borderColor:'rgba(46,117,182,.6)',borderWidth:1},mode:'x'}
+  };
+}catch(e){}
+})();</script>
 <script>(()=>{
 const $=id=>document.getElementById(id);
 let rows=[],chart=null,M=null;
@@ -1045,6 +1064,23 @@ $('s_impf').onchange=async e=>{
   }catch(err){msg('Não consegui ler o backup ('+((err&&err.message)||'erro')+').')}
 };
 upd();lista();
+})();</script>
+<script>(()=>{
+const fine=matchMedia('(pointer:fine)').matches;
+const dica=fine?'Arraste sobre o gráfico para ampliar um trecho · Ctrl + roda do mouse amplia · Shift + arrastar move · duplo clique restaura':'Use dois dedos para ampliar e mover o gráfico';
+const ch=box=>window.Chart&&Chart.getChart(box.querySelector('canvas'));
+document.querySelectorAll('.chartbox').forEach(box=>{
+  const bar=document.createElement('div');bar.className='zbar';
+  bar.innerHTML=`<small>🔍 ${dica}</small><button class="zb" data-z="in">＋</button><button class="zb" data-z="out">－</button><button class="zb" data-z="reset">↺ Restaurar</button><button class="zb" data-z="big">⛶ Ampliar</button>`;
+  box.parentNode.insertBefore(bar,box);
+  bar.onclick=e=>{
+    const b=e.target.closest('button');if(!b)return;const c=ch(box);
+    if(b.dataset.z==='big'){const on=box.classList.toggle('big');b.textContent=on?'⤡ Reduzir':'⛶ Ampliar';if(c)c.resize();if(on)box.scrollIntoView({behavior:'smooth',block:'center'});return}
+    if(!c||!c.zoom)return;
+    if(b.dataset.z==='in')c.zoom({x:1.5});else if(b.dataset.z==='out')c.zoom({x:1/1.5});else c.resetZoom();
+  };
+  box.addEventListener('dblclick',()=>{const c=ch(box);if(c&&c.resetZoom)c.resetZoom()});
+});
 })();</script>
 <script>
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
