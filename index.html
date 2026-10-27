@@ -39,13 +39,24 @@ button.pdf:hover{filter:brightness(1.1)} button.alt{background:transparent;color
 .legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin:0 5px 0 12px}.legend i:first-child{margin-left:0}
 .note{font-size:.82rem;color:var(--mut);margin:8px 0 0}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
-@media print{.drop,.opts,.acts,.msg,.sub,.tabs{display:none!important}body{background:#fff;color:#000}.card{break-inside:avoid;border-color:#ccc}.chartbox{height:300px}:root{--bg:#fff;--card:#fff;--txt:#1b2430;--mut:#667085;--bd:#dde3ea;--pri:#1f4e79;--red:#c00000;--ok:#1b7f4b;--ovl:#7b1fa2}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media print{.drop,.opts,.acts,.msg,.sub,.tabs,#s_card{display:none!important}body{background:#fff;color:#000}.card{break-inside:avoid;border-color:#ccc}.chartbox{height:300px}:root{--bg:#fff;--card:#fff;--txt:#1b2430;--mut:#667085;--bd:#dde3ea;--pri:#1f4e79;--red:#c00000;--ok:#1b7f4b;--ovl:#7b1fa2}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
 .tab{font:inherit;font-weight:600;color:var(--pri);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 16px;cursor:pointer}
 .tab.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 input:disabled{opacity:.6;cursor:not-allowed}
 .warn{color:#d97706}
+.svrow{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.svrow label{flex:1 1 260px}.svrow input{width:100%}
+.btn{font:inherit;font-weight:600;color:#fff;background:var(--pri);border:0;border-radius:10px;padding:9px 14px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--pri);border:1px solid var(--pri)}
+.btn.sm{padding:6px 10px;font-size:.85rem}.btn.del{background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.svlist{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.svit{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px 12px}
+.svit .nm{font-weight:600}.svit small{display:block;color:var(--mut);font-size:.78rem}
+.svit .ac{display:flex;gap:6px;flex-wrap:wrap}
+.svok{color:var(--ok);font-size:.9rem;margin-top:8px}
 .ovl{color:var(--ovl)}
 </style>
 </head>
@@ -57,6 +68,19 @@ input:disabled{opacity:.6;cursor:not-allowed}
   <input id="u_file" type="file" multiple accept=".xlsx,.xls,.xlsm,.csv,.txt" class="hide">
   <div class="msg" id="u_msg"></div>
   <p class="note">O tipo de cada arquivo é reconhecido pelas colunas: Data/Hora com W ou kVA (carregamento), I_a/I_b/I_c (balanceamento) ou V_a/V_b/V_c (tensão).</p>
+</div>
+<div class="card" id="s_card">
+  <h2>💾 Análises salvas</h2>
+  <div class="svrow">
+    <label>Nome da análise<input id="s_name" type="text" placeholder="Ex.: Trafo 112,5 kVA – Rua das Flores – outubro"></label>
+    <button id="s_save" class="btn" disabled>Salvar análise atual</button>
+    <button id="s_exp" class="btn alt">⬇️ Exportar backup</button>
+    <button id="s_imp" class="btn alt">⬆️ Importar backup</button>
+    <input id="s_impf" type="file" accept=".json,application/json" class="hide">
+  </div>
+  <div class="msg" id="s_msg"></div><div class="svok" id="s_ok"></div>
+  <div class="svlist" id="s_list"></div>
+  <p class="note">Salva as planilhas carregadas e todos os ajustes das três abas (potência, limites, datas, agrupamentos). As análises ficam guardadas neste navegador, neste computador; use o backup para levá-las a outro computador ou para não perdê-las se os dados do navegador forem limpos.</p>
 </div>
 <div class="tabs"><button class="tab on" data-t="tab_t">⚡ Carregamento do trafo</button><button class="tab" data-t="tab_b">⚖️ Balanceamento de fases</button><button class="tab" data-t="tab_v">🔌 Tensão (PRODIST Módulo 8)</button></div>
 <section id="tab_t">
@@ -918,6 +942,109 @@ $('u_file').onchange=e=>{handle(e.target.files);e.target.value=''};
 ['dragover','dragenter'].forEach(t=>$('u_drop').addEventListener(t,e=>{e.preventDefault();$('u_drop').classList.add('on')}));
 ['dragleave','drop'].forEach(t=>$('u_drop').addEventListener(t,e=>{e.preventDefault();$('u_drop').classList.remove('on')}));
 $('u_drop').addEventListener('drop',e=>handle(e.dataTransfer.files));
+})();</script>
+<script>(()=>{
+const $=id=>document.getElementById(id);
+const SEC=[['t','tab_t','t_file','t_res','t_msg','Carregamento'],['b','tab_b','file','res','msg','Balanceamento'],['v','tab_v','v_file','v_res','v_msg','Tensão']];
+const esc=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let DB=null,DL=null;
+(async()=>{try{DL=window.claude&&await claude.use('downloads')}catch(e){DL=null}})();
+function db(){
+  if(DB)return Promise.resolve(DB);
+  return new Promise((res,rej)=>{
+    let q;try{q=indexedDB.open('analisador_trafo',1)}catch(e){return rej(e)}
+    q.onupgradeneeded=()=>q.result.createObjectStore('analises',{keyPath:'id'});
+    q.onsuccess=()=>{DB=q.result;res(DB)};q.onerror=()=>rej(q.error);
+  });
+}
+async function tx(mode,fn){
+  const d=await db();
+  return new Promise((res,rej)=>{const t=d.transaction('analises',mode),st=t.objectStore('analises');const q=fn(st);t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)});
+}
+const all=()=>tx('readonly',st=>st.getAll());
+const put=a=>tx('readwrite',st=>st.put(a));
+const del=id=>tx('readwrite',st=>st.delete(id));
+const get=id=>tx('readonly',st=>st.get(id));
+function curFiles(){return SEC.map(([k,,fi])=>{const f=$(fi).files&&$(fi).files[0];return f?{k,file:f}:null}).filter(Boolean)}
+function settings(){
+  const o=[];
+  SEC.forEach(([,sec])=>document.querySelectorAll(`#${sec} .opts input, #${sec} .opts select`).forEach(el=>{if(el.id&&el.type!=='file')o.push([el.id,el.value])}));
+  return o;
+}
+function msg(t,ok){$('s_msg').textContent=ok?'':t;$('s_ok').textContent=ok?t:''}
+const dtf=ms=>new Date(ms).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+const sz=b=>b>1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+function upd(){$('s_save').disabled=!curFiles().length;if(!$('s_name').value){const f=curFiles();$('s_name').placeholder=f.length?f[0].file.name.replace(/\.[^.]+$/,'')+' – '+new Date().toLocaleDateString('pt-BR'):'Ex.: Trafo 112,5 kVA – Rua das Flores – outubro'}}
+SEC.forEach(([,,fi])=>$(fi).addEventListener('change',()=>setTimeout(upd,0)));
+async function lista(){
+  let L;
+  try{L=await all()}catch(e){$('s_list').innerHTML='';return msg('Este navegador não permite guardar dados aqui (modo anônimo ou dados do site bloqueados). Use o backup para guardar suas análises.')}
+  L.sort((a,b)=>b.ts-a.ts);
+  $('s_list').innerHTML=L.length?L.map(a=>`<div class="svit"><div><div class="nm">${esc(a.name)}</div><small>Salva em ${dtf(a.ts)} · ${a.files.map(f=>esc(SEC.find(x=>x[0]===f.k)[5]+': '+f.name)).join(' · ')}</small></div><div class="ac"><button class="btn sm" data-o="${a.id}">Abrir</button><button class="btn sm alt" data-r="${a.id}">Renomear</button><button class="btn sm del" data-x="${a.id}">Excluir</button></div></div>`).join(''):'<p class="note">Nenhuma análise salva ainda. Carregue as planilhas, ajuste os parâmetros e clique em "Salvar análise atual".</p>';
+}
+$('s_save').onclick=async()=>{
+  const f=curFiles();if(!f.length)return msg('Carregue ao menos uma planilha antes de salvar.');
+  const name=($('s_name').value||$('s_name').placeholder).trim();
+  try{
+    const files=await Promise.all(f.map(async({k,file})=>({k,name:file.name,type:file.type,data:await file.arrayBuffer()})));
+    await put({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,ts:Date.now(),files,set:settings(),tab:(document.querySelector('.tab.on')||{}).dataset?.t||'tab_t'});
+    $('s_name').value='';upd();msg(`Análise "${name}" salva.`,1);lista();
+  }catch(e){msg('Não consegui salvar ('+(e&&e.name==='QuotaExceededError'?'sem espaço no navegador':(e&&e.message)||'erro')+').')}
+};
+function wait(ids,ms){
+  const t0=Date.now();
+  return new Promise(res=>{const tick=()=>{if(ids.every(([r,m])=>!$(r).classList.contains('hide')||$(m).textContent)||Date.now()-t0>ms)return res();setTimeout(tick,100)};tick()});
+}
+async function abrir(id){
+  msg('');
+  let a;try{a=await get(id)}catch(e){return msg('Não consegui abrir a análise.')}
+  if(!a)return msg('Análise não encontrada.');
+  const ids=[];
+  for(const f of a.files){
+    const s=SEC.find(x=>x[0]===f.k);if(!s)continue;
+    const file=new File([f.data],f.name,{type:f.type||''});
+    $(s[3]).classList.add('hide');$(s[4]).textContent='';
+    const inp=$(s[2]),dt=new DataTransfer();dt.items.add(file);inp.files=dt.files;inp.dispatchEvent(new Event('change'));
+    ids.push([s[3],s[4]]);
+  }
+  await wait(ids,15000);
+  for(const [id,v] of a.set){const el=$(id);if(!el)continue;el.value=v;el.dispatchEvent(new Event('input'));el.dispatchEvent(new Event('change'))}
+  $('u_list').innerHTML=a.files.map(f=>`✔ ${esc(f.name)} <b>→ ${esc(SEC.find(x=>x[0]===f.k)[5])}</b>`).join('<br>')+`<br><small>Análise salva: ${esc(a.name)}</small>`;
+  const tb=document.querySelector(`.tab[data-t="${a.tab}"]`)||document.querySelector(`.tab[data-t="${SEC.find(x=>x[0]===a.files[0].k)[1]}"]`);if(tb)tb.click();
+  upd();msg(`Análise "${a.name}" aberta.`,1);
+  window.scrollTo({top:$(a.tab||'tab_t').offsetTop-10,behavior:'smooth'});
+}
+$('s_list').onclick=async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.o)return abrir(b.dataset.o);
+  if(b.dataset.r){const a=await get(b.dataset.r);const n=prompt('Novo nome da análise:',a.name);if(n&&n.trim()){a.name=n.trim();await put(a);lista()}return}
+  if(b.dataset.x){const a=await get(b.dataset.x);if(confirm(`Excluir a análise "${a.name}"? Isso não pode ser desfeito.`)){await del(a.id);msg('Análise excluída.',1);lista()}}
+};
+const b64=buf=>{const u=new Uint8Array(buf);let s='';for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(s)};
+const unb64=s=>{const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer};
+$('s_exp').onclick=async()=>{
+  msg('');
+  try{
+    const L=await all();if(!L.length)return msg('Não há análises salvas para exportar.');
+    const out={app:'analisador-trafo',versao:1,exportado:new Date().toISOString(),analises:L.map(a=>({...a,files:a.files.map(f=>({...f,data:b64(f.data)}))}))};
+    const blob=new Blob([JSON.stringify(out)],{type:'application/json'}),fn=`Backup_Analises_Trafo_${new Date().toISOString().slice(0,10)}.json`;
+    if(DL)await DL.save({filename:fn,data:blob});
+    else{const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download=fn;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
+    msg(`Backup com ${L.length} análise(s) gerado.`,1);
+  }catch(e){msg(e&&e.code==='declined'?'Download cancelado.':'Não consegui gerar o backup ('+((e&&e.message)||'erro')+').')}
+};
+$('s_imp').onclick=()=>$('s_impf').click();
+$('s_impf').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;msg('');
+  try{
+    const j=JSON.parse(await f.text());
+    if(!j||j.app!=='analisador-trafo'||!Array.isArray(j.analises))return msg('Este arquivo não é um backup do analisador.');
+    const atual=new Set((await all()).map(a=>a.id));let n=0,p=0;
+    for(const a of j.analises){if(atual.has(a.id)){p++;continue}await put({...a,files:a.files.map(x=>({...x,data:unb64(x.data)}))});n++}
+    msg(`${n} análise(s) importada(s)`+(p?`, ${p} já existia(m) e foi(ram) mantida(s).`:'.'),1);lista();
+  }catch(err){msg('Não consegui ler o backup ('+((err&&err.message)||'erro')+').')}
+};
+upd();lista();
 })();</script>
 <script>
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
